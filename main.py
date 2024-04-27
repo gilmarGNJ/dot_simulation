@@ -4,24 +4,12 @@ from racer import Racer
 from obstacle import Obstacle
 from utilities import get_unique_colors
 
-def add_collision_handler(space):
-    handler = space.add_default_collision_handler()
-    handler.post_solve = post_solve_collision
-
-def post_solve_collision(arbiter, space, data):
-    for shape in arbiter.shapes:
-        if hasattr(shape, "racer"):
-            shape.racer.collide()
-
 def main():
     pygame.init()
     screen = pygame.display.set_mode((1200, 800))
     pygame.display.set_caption("Physics Racing Simulation")
-    
-    # Setup space and add collision handler
-    space = setup_space()
-    add_collision_handler(space)
 
+    space = setup_space()
     colors = get_unique_colors(50)
     racers = [Racer(space, color, (600, 0)) for color in colors]
     obstacles = [Obstacle(space) for _ in range(10)]
@@ -33,12 +21,14 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.USEREVENT:
+                # Handle the user event which is used to stop the glowing effect
                 for racer in racers:
-                    racer.update()
+                    racer.handle_timer_event()
 
         space.step(1 / 60)  # Physics step
         screen.fill((0, 0, 0))
         for racer in racers:
+            racer.update()  # Call update to check for velocity changes
             racer.draw(screen)
         for obstacle in obstacles:
             obstacle.draw(screen)

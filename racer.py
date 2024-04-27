@@ -1,5 +1,5 @@
-import pymunk
 import pygame
+import pymunk
 
 class Racer:
     def __init__(self, space, color, position):
@@ -10,23 +10,43 @@ class Racer:
         self.shape.friction = 0.5
         self.original_color = pygame.Color(*color)
         self.color = self.original_color
-        self.shape.racer = self  # Link this racer to the shape for collision handling
         space.add(self.body, self.shape)
-        self.colliding = False
+        self.previous_velocity = self.body.velocity  # Store the initial velocity
+        self.collision_sound = pygame.mixer.Sound('marbles.wav')  # Load the sound file
 
     def draw(self, screen):
         pos = int(self.body.position.x), int(self.body.position.y)
         pygame.draw.circle(screen, self.color, pos, 5)
 
-    def collide(self):
-        if not self.colliding:
-            self.color = pygame.Color(255, 255, 255)
-            self.colliding = True
-            pygame.time.set_timer(pygame.USEREVENT, 100)
-
     def update(self):
-        if self.colliding:
-            self.color = self.original_color
-            self.colliding = False
-            pygame.time.set_timer(pygame.USEREVENT, 0)  # Reset the timer
+        current_velocity = self.body.velocity
+        velocity_change = (current_velocity - self.previous_velocity).length
 
+        # Adjust these values based on your observations of typical velocity changes
+        velocity_change_threshold = 50
+        max_velocity_change = 500
+        volume = min(1.0, velocity_change / max_velocity_change)
+
+        # Directly manage the glowing effect based on velocity change
+        if velocity_change > velocity_change_threshold:
+            self.color = self.brighten_color(self.original_color)
+            self.collision_sound.set_volume(volume)  # Set the volume based on impact
+            self.collision_sound.play()  # Play the sound effect
+            pygame.time.set_timer(pygame.USEREVENT, 100)  # Set timer to handle effect duration
+        else:
+            self.color = self.original_color
+
+        # Update previous velocity for the next frame
+        self.previous_velocity = current_velocity
+
+
+    def brighten_color(self, color):
+        r = min(255, color.r + 100)
+        g = min(255, color.g + 100)
+        b = min(255, color.b + 100)
+        return pygame.Color(r, g, b)
+
+    def handle_timer_event(self):
+        # This method will be triggered by the USEREVENT from the pygame timer
+        self.color = self.original_color
+        pygame.time.set_timer(pygame.USEREVENT, 0)  # Reset the timer
